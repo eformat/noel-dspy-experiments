@@ -13,13 +13,14 @@ import os
 from dotenv import load_dotenv
 from llama_stack_client import LlamaStackClient
 import random
+from rich import print
 
 load_dotenv()
 LLAMA_STACK_URL = os.getenv("LLAMA_STACK_URL")
 
-REASON_LLM_KEY = os.getenv("REASON_LLM_KEY")
-REASON_LLM_HOST = os.getenv("REASON_LLM_HOST")
-REASON_LLM_MODEL = os.getenv("REASON_LLM_MODEL")
+#REASON_LLM_KEY = os.getenv("REASON_LLM_KEY")
+#REASON_LLM_HOST = os.getenv("REASON_LLM_HOST")
+#REASON_LLM_MODEL = os.getenv("REASON_LLM_MODEL")
 
 
 root = logging.getLogger()
@@ -184,16 +185,17 @@ if __name__ == "__main__":
 
     lls_client = LlamaStackClient(base_url=LLAMA_STACK_URL)
     model_list = lls_client.models.list()
+    print(model_list)
     llm = dspy.LM(
-        "openai/" + model_list[0].identifier,
+        "openai/" + model_list[2].identifier,
         api_base=LLAMA_STACK_URL + "/v1/openai/v1",
         model_type="chat",
         api_key="this is a fake key",
     )
 
-    reflection_lm = dspy.LM(
-        model=REASON_LLM_MODEL, api_base=REASON_LLM_HOST, api_key=REASON_LLM_KEY
-    )
+    # reflection_lm = dspy.LM(
+    #     model=REASON_LLM_MODEL, api_base=REASON_LLM_HOST, api_key=REASON_LLM_KEY
+    # )
 
     LOGGING_LINE_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
     LOGGING_DATETIME_FORMAT = "%Y/%m/%d %H:%M:%S"
@@ -202,15 +204,25 @@ if __name__ == "__main__":
     # evaluate_prompt()
     # optimise_prompt_gepa()
     # optimise_prompt_bootstrap()
-    # optimise_prompt_miprov2()
+    optimise_prompt_miprov2()
     # print(human_count)
     # dspy.inspect_history(n=10)
     text_processor = dspy.Predict(AILanguageDetector)
     # text_processor.save("base-prompt.json")
-    text_processor.load("base-prompt.json")
-    evaluate_prompt(text_processor)
+    #text_processor.load("base-prompt.json")
+    text_processor.load("mipro-prompt.json")
+    # evaluate_prompt(text_processor)
 
 
 # On validation data set (908 examples)
 #2025/09/12 14:03:11 INFO dspy.evaluate.evaluate: Average Metric: 884.0 / 908 (97.4%) - Miprov2
 # 2025/09/12 14:33:14 INFO dspy.evaluate.evaluate: Average Metric: 512.0 / 908 (56.4%) - Base prompt
+
+# vllm-llama-4-guard/llama-4-scout-17b-16e-w4a16
+# text_processor.load("base-prompt.json")
+#Average Metric: 1456.00 / 2750 (52.9%): 100%|████████████████████████████| 2750/2750 [12:08<00:00,  3.78it/s]
+#2025/09/14 10:10:47 INFO dspy.evaluate.evaluate: Average Metric: 1456.0 / 2750 (52.9%)
+
+# text_processor.load("mipro-prompt.json")
+#Average Metric: 2717.00 / 2750 (98.8%): 100%|████████████████████████████| 2750/2750 [11:01<00:00,  4.16it/s]
+#2025/09/14 10:33:00 INFO dspy.evaluate.evaluate: Average Metric: 2717.0 / 2750 (98.8%)
