@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from llama_stack_client import LlamaStackClient
 import random
 from rich import print
+from datasets import load_dataset
 
 load_dotenv()
 LLAMA_STACK_URL = os.getenv("LLAMA_STACK_URL")
@@ -141,18 +142,36 @@ def evaluate_prompt(text_processor: Any, validation_set: List):
     evaluate(text_processor)
 
 
-def init_dataset():
-    df = pd.read_csv("data/balanced_ai_human_prompts.csv")
-    full_dspy_dataset=[]
-    for index, row in df.iterrows():
-        full_dspy_dataset.append(
-            dspy.Example(
-                {
-                    "input_text": row["text"],
-                    "result": row["generated"],
-                }
-            ).with_inputs("input_text")
+def examples_from_rows(rows):
+    return [
+        dspy.Example({"input_text": row["text"], "result": row["generated"]}).with_inputs(
+            "input_text"
         )
+        for row in rows
+    ]
+
+
+def init_dataset():
+    full_hf_dataset = load_dataset("csv", data_files="data/balanced_ai_human_prompts.csv", split="train")
+    full_dspy_dataset = examples_from_rows(full_hf_dataset)
+    train_hf_dataset = load_dataset(
+        "csv", data_files="data/balanced_ai_human_prompts.csv", split="train[0:33%]"
+    )
+    train_set = examples_from_rows(train_hf_dataset)
+    val_hf_dataset = load_dataset(
+        "csv", data_files="data/balanced_ai_human_prompts.csv", split="train[33:66%]"
+    )
+    val_set = examples_from_rows(val_hf_dataset)
+    test_hf_dataset = load_dataset(
+        "csv", data_files="data/balanced_ai_human_prompts.csv", split="train[66:100%]"
+    )
+    test_set = examples_from_rows(test_hf_dataset)
+    return full_dspy_dataset, train_set, val_set, test_set
+
+
+def init_dataset2():
+    df = pd.read_csv("data/balanced_ai_human_prompts.csv")
+    full_dspy_dataset = examples_from_rows(df.to_dict(orient="records"))
 
     random.Random(0).shuffle(full_dspy_dataset)
     train_set = full_dspy_dataset[: int(len(full_dspy_dataset) * 0.33)]
